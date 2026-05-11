@@ -17,6 +17,9 @@ jobs:
           jq --version
           bash --version | head -1
 
+      - name: Pack loader unit tests
+        run: bash tests/test-pack-loader.sh
+
       - name: Test 1 — positive closeout that admits missing verification → BLOCK
         run: |
           out="$(printf '%s' '{"hook_event_name":"Stop","last_assistant_message":"All done! Tests not run because I was in a hurry."}' | bash no-vibes.sh 2>&1; echo "EXIT=$?")"

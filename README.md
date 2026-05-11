@@ -8,7 +8,18 @@
 
 > A Claude Code Stop hook that blocks the model from closing a turn with positive language when it didn't actually verify anything.
 
-`no-vibes` is one bash file (~370 lines, depends only on `jq`) wired into Claude Code's `Stop`, `SubagentStop`, `PreToolUse`, `PostToolUse`, `TaskCreated`, and `TaskCompleted` events. It pattern-matches the language Claude uses when it is about to claim success it didn't earn — and it returns the exact corrective shape the model should use instead.
+`no-vibes` is one bash file (~530 lines, depends only on `jq`) wired into Claude Code's `Stop`, `SubagentStop`, `PreToolUse`, `PostToolUse`, `TaskCreated`, and `TaskCompleted` events. It pattern-matches the language Claude uses when it is about to claim success it didn't earn — and it returns the exact corrective shape the model should use instead.
+
+### What's new (2026-05-11)
+
+| Change | What it fixes |
+|---|---|
+| Loadable locale packs (English, Spanish, Polish ship; native-speaker PRs welcome for the rest) | Operators running Claude in non-English sessions previously bypassed the hook entirely — the vocab was English-only |
+| Loadable evidence binary allowlist (200+ binaries across 9 categories) | The previous regex only recognized `git`/`npm`/`bash`/etc. Devops/SRE work could close as "verified the cluster" with zero terminal evidence |
+| Loadable destructive command surface packs (filesystem, container, git-protected, config-overwrite, cloud-prod, database, service) | Previous rules only caught filesystem-level destruction. `docker stop`, `git push --force main`, `terraform destroy`, `DROP TABLE`, `redis-cli FLUSHALL`, `systemctl stop` are now blocked at PreToolUse |
+| Bypass hardening (clause-local negation + evidence proximity + action-verb context) | Two reported bypasses closed: hedge-then-positive and backtick-mid-message-disclaimed-evidence no longer slip through |
+
+Operators can extend any pack without forking by dropping a `.txt` at `${XDG_CONFIG_HOME:-$HOME/.config}/llm-dark-patterns/packs/<subdir>/<name>.txt`. See the umbrella suite repo's [ROADMAP.md](https://github.com/waitdeadai/llm-dark-patterns/blob/main/ROADMAP.md) for the architecture spec.
 
 This addresses the failure pattern documented in [anthropics/claude-code#46727 (April 2026)](https://github.com/anthropics/claude-code/issues/46727):
 
