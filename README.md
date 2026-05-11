@@ -79,11 +79,14 @@ The repair-guidance template is the part that matters most. Most "block" hooks j
 
 ## Sister tools
 
-Part of a small series of single-purpose Claude Code hooks extracted from the [minmaxing](https://github.com/waitdeadai/minmaxing) governance harness.
+Part of the [LLM Dark Patterns Hooks](https://github.com/waitdeadai/llm-dark-patterns) suite — single-purpose Claude Code Stop hooks that suppress LLM dark-pattern defaults so power-user operators can actually work.
 
-- [time-anchor](https://github.com/waitdeadai/time-anchor) — injects the local system clock into every session and prompt so the model stops giving training-cutoff answers.
-- [no-curfew](https://github.com/waitdeadai/no-curfew) — suppresses unsolicited rest/sleep/wellness paternalism in agent-mode sessions.
-- [minmaxing](https://github.com/waitdeadai/minmaxing) — the full governance harness these hooks were extracted from.
+- [time-anchor](https://github.com/waitdeadai/time-anchor) — injects the local system clock so the model stops giving training-cutoff answers.
+- [no-curfew](https://github.com/waitdeadai/no-curfew) — suppresses unsolicited rest/sleep/wellness paternalism.
+- [no-sycophancy](https://github.com/waitdeadai/no-sycophancy) — blocks praise-spam at turn open.
+- [no-cliffhanger](https://github.com/waitdeadai/no-cliffhanger) — blocks dangling permission-loop endings.
+- [llm-dark-patterns](https://github.com/waitdeadai/llm-dark-patterns) — umbrella catalog of the suite.
+- [minmaxing](https://github.com/waitdeadai/minmaxing) — the parent governance harness.
 
 ## Acknowledgments
 
