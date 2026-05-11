@@ -1,5 +1,10 @@
 # no-vibes
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/waitdeadai/no-vibes)](https://github.com/waitdeadai/no-vibes/releases)
+[![GitHub stars](https://img.shields.io/github/stars/waitdeadai/no-vibes?style=social)](https://github.com/waitdeadai/no-vibes/stargazers)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-hook-orange)](https://code.claude.com/docs/en/hooks)
+
 > A Claude Code Stop hook that blocks the model from closing a turn with positive language when it didn't actually verify anything.
 
 `no-vibes` is one bash file (~370 lines, depends only on `jq`) wired into Claude Code's `Stop`, `SubagentStop`, `PreToolUse`, `PostToolUse`, `TaskCreated`, and `TaskCompleted` events. It pattern-matches the language Claude uses when it is about to claim success it didn't earn — and it returns the exact corrective shape the model should use instead.

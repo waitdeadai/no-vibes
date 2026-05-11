@@ -1,0 +1,37 @@
+name: New pattern suggestion
+description: Suggest a new false-success vocabulary, evidence pattern, or destructive-command pattern the hook should catch.
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Pattern kind
+      options:
+        - New positive-closeout vocabulary (should trigger BLOCK)
+        - New evidence pattern (should let a closeout pass)
+        - New destructive-Bash pattern
+        - New sensitive-write path
+    validations:
+      required: true
+  - type: textarea
+    id: pattern
+    attributes:
+      label: The pattern
+      description: The exact phrase or regex you want added/changed.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example payload
+      description: A JSON payload that contains the pattern, in the same shape as the existing fixtures in RECEIPTS.md.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: justification
+    attributes:
+      label: Why this case matters
+      description: A short explanation. A real session where the missing pattern caused harm is the strongest argument.
+    validations:
+      required: true

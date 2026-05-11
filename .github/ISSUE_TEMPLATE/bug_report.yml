@@ -1,0 +1,53 @@
+name: Bug report
+description: The hook fired when it shouldn't have, or didn't fire when it should have.
+labels: [bug]
+body:
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Minimal reproducer (JSON payload)
+      description: |
+        The smallest JSON payload that reproduces the behavior. Like the fixtures in RECEIPTS.md Part 1.
+      placeholder: |
+        {"hook_event_name":"Stop","last_assistant_message":"..."}
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: Exit code + full stderr from running `bash no-vibes.sh < reproducer.json`.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Exit code + stderr you expected.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: jq-version
+    attributes:
+      label: jq version
+      description: Output of `jq --version`.
+      placeholder: jq-1.7
+    validations:
+      required: true
+  - type: input
+    id: shell
+    attributes:
+      label: Shell + OS
+      description: e.g. `bash 5.1 on Ubuntu 24.04`, `bash 3.2 on macOS 14.5`.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context (optional)
+      description: Anything else that helps reproduce or understand the case.
+    validations:
+      required: false
