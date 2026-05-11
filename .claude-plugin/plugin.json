@@ -1,0 +1,22 @@
+{
+  "name": "no-vibes",
+  "description": "Stop hook that blocks Claude from claiming work is done without verification evidence. Pattern-matches positive-closeout vocabulary in the assistant's outgoing message and refuses turns that lack matching evidence (command output, verification markers, source ledger). Returns a repair-guidance template the model self-corrects from on the next turn.",
+  "version": "0.1.1",
+  "author": {
+    "name": "waitdeadai",
+    "url": "https://github.com/waitdeadai"
+  },
+  "homepage": "https://github.com/waitdeadai/no-vibes",
+  "repository": "https://github.com/waitdeadai/no-vibes",
+  "license": "Apache-2.0",
+  "keywords": [
+    "claude-code",
+    "hooks",
+    "verification",
+    "anti-hallucination",
+    "governance",
+    "ai-safety",
+    "dark-patterns",
+    "stop-hook"
+  ]
+}
