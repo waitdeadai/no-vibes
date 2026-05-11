@@ -1,0 +1,68 @@
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  fixtures:
+    name: Fixture tests (Ubuntu)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify dependencies
+        run: |
+          jq --version
+          bash --version | head -1
+
+      - name: Test 1 — positive closeout that admits missing verification → BLOCK
+        run: |
+          out="$(printf '%s' '{"hook_event_name":"Stop","last_assistant_message":"All done! Tests not run because I was in a hurry."}' | bash no-vibes.sh 2>&1; echo "EXIT=$?")"
+          echo "$out"
+          echo "$out" | grep -q "BLOCKED: positive closeout conflicts" || { echo "FAIL: expected BLOCKED message"; exit 1; }
+          echo "$out" | grep -q "EXIT=2" || { echo "FAIL: expected exit 2"; exit 1; }
+
+      - name: Test 2 — positive closeout with no evidence → BLOCK
+        run: |
+          out="$(printf '%s' '{"hook_event_name":"Stop","last_assistant_message":"The feature is now implemented and ready."}' | bash no-vibes.sh 2>&1; echo "EXIT=$?")"
+          echo "$out"
+          echo "$out" | grep -q "BLOCKED: closeout needs concrete evidence" || { echo "FAIL: expected BLOCKED evidence message"; exit 1; }
+          echo "$out" | grep -q "EXIT=2" || { echo "FAIL: expected exit 2"; exit 1; }
+
+      - name: Test 3 — positive closeout WITH command evidence → ALLOW
+        run: |
+          out="$(printf '%s' '{"hook_event_name":"Stop","last_assistant_message":"Implemented and verified. Commands run: `pytest -q` -> 23 passed."}' | bash no-vibes.sh 2>&1; echo "EXIT=$?")"
+          echo "$out"
+          echo "$out" | grep -q "EXIT=0" || { echo "FAIL: expected exit 0"; exit 1; }
+
+      - name: Test 4 — destructive Bash command → BLOCK
+        run: |
+          # Build the JSON in Python so the literal pattern doesn't trip any parent shell guard.
+          out="$(python3 -c "
+          import json, subprocess
+          payload = json.dumps({'hook_event_name':'PreToolUse','tool_name':'Bash','tool_input':{'command':'r'+'m -r'+'f /tmp/foo'}})
+          r = subprocess.run(['bash','no-vibes.sh'], input=payload, capture_output=True, text=True)
+          print(r.stderr)
+          print('EXIT=' + str(r.returncode))
+          ")"
+          echo "$out"
+          echo "$out" | grep -q "BLOCKED: destructive Bash command" || { echo "FAIL: expected destructive Bash block"; exit 1; }
+          echo "$out" | grep -q "EXIT=2" || { echo "FAIL: expected exit 2"; exit 1; }
+
+      - name: Test 5 — write to .env → BLOCK
+        run: |
+          out="$(printf '%s' '{"hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":".env"}}' | bash no-vibes.sh 2>&1; echo "EXIT=$?")"
+          echo "$out"
+          echo "$out" | grep -q "BLOCKED: write tool touched sensitive" || { echo "FAIL: expected sensitive write block"; exit 1; }
+          echo "$out" | grep -q "EXIT=2" || { echo "FAIL: expected exit 2"; exit 1; }
+
+      - name: Test 6 — honest partial closeout → ALLOW
+        run: |
+          out="$(printf '%s' '{"hook_event_name":"Stop","last_assistant_message":"Status: partial. Verification: not run because the test suite is unavailable. Next step: install pytest."}' | bash no-vibes.sh 2>&1; echo "EXIT=$?")"
+          echo "$out"
+          echo "$out" | grep -q "EXIT=0" || { echo "FAIL: expected exit 0"; exit 1; }
+
+      - name: Summary
+        run: echo "All six fixture tests behaved as documented in RECEIPTS.md Part 1."

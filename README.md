@@ -1,5 +1,6 @@
 # no-vibes
 
+[![tests](https://github.com/waitdeadai/no-vibes/actions/workflows/test.yml/badge.svg)](https://github.com/waitdeadai/no-vibes/actions/workflows/test.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/waitdeadai/no-vibes)](https://github.com/waitdeadai/no-vibes/releases)
 [![GitHub stars](https://img.shields.io/github/stars/waitdeadai/no-vibes?style=social)](https://github.com/waitdeadai/no-vibes/stargazers)
