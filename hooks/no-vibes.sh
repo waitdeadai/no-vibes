@@ -1,8 +1,137 @@
 #!/bin/bash
 # Claude Code hook: block destructive Bash and low-evidence positive closeout.
 # Extra hook events fail open unless the payload is clearly dangerous.
+#
+# Vocabulary is loaded from packs/locale/<lang>.txt (Phase 1 of the loadable
+# packs roadmap, see ROADMAP.md). The hook still works without packs — each
+# load falls back to an inline English default that matches the pre-pack
+# behavior verbatim, so no fixture regresses.
 
 set -euo pipefail
+
+# Load the shared pack helper. The plugin format puts hooks/ and lib/ as
+# siblings under ${CLAUDE_PLUGIN_ROOT}; resolve relative to this script.
+_HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$_HOOK_DIR/../lib/packs.sh" ]; then
+  # shellcheck source=../lib/packs.sh
+  source "$_HOOK_DIR/../lib/packs.sh"
+fi
+
+# Resolve vocab from active locale packs, or fall back to the inline English
+# defaults if the loader is unavailable or the pack section is empty.
+_load_with_fallback() {
+  local section="$1" fallback="$2" loaded=""
+  if declare -F load_locale_section >/dev/null 2>&1; then
+    loaded="$(load_locale_section "$section" 2>/dev/null)"
+  fi
+  if [ -z "$loaded" ]; then
+    printf '%s' "$fallback"
+  else
+    printf '%s' "$loaded"
+  fi
+}
+
+POSITIVE_VERBS_RE="$(_load_with_fallback positive_closeout 'all set|done|completed|complete|implemented|fixed|finished|ready|passes|passed|shipped')"
+NEGATIONS_RE="$(_load_with_fallback negation 'not done|not complete|not completed|not ready|incomplete|unfinished|never ran|did not (run|execute|test|verify)')"
+
+# Phase 3: evidence binaries pack. Resolves which backtick-quoted tokens
+# count as a real command. Sections are opt-in via env or all-by-default.
+_load_evidence_binaries() {
+  local section_filter="${LLM_DARK_PATTERNS_EVIDENCE_CATEGORIES:-}"
+  if ! declare -F resolve_pack_paths >/dev/null 2>&1; then
+    return
+  fi
+  local pack_paths=()
+  local path
+  while IFS= read -r path; do
+    pack_paths+=("$path")
+  done < <(resolve_pack_paths "evidence" "binaries")
+
+  local section combined=""
+  if [ -z "$section_filter" ]; then
+    # Default: load every known section in the pack.
+    for section in app-dev containers k8s devops cloud database shell-tools system archive http; do
+      local part
+      part="$(load_pack_section "$section" "${pack_paths[@]}" 2>/dev/null)"
+      [ -z "$part" ] && continue
+      if [ -z "$combined" ]; then
+        combined="$part"
+      else
+        combined="${combined}|${part}"
+      fi
+    done
+  else
+    while IFS= read -r section; do
+      [ -z "$section" ] && continue
+      local part
+      part="$(load_pack_section "$section" "${pack_paths[@]}" 2>/dev/null)"
+      [ -z "$part" ] && continue
+      if [ -z "$combined" ]; then
+        combined="$part"
+      else
+        combined="${combined}|${part}"
+      fi
+    done < <(printf '%s\n' "$section_filter" | tr ',' '\n')
+  fi
+  printf '%s' "$combined"
+}
+
+EVIDENCE_BINARIES_RE="$(_load_evidence_binaries)"
+if [ -z "$EVIDENCE_BINARIES_RE" ]; then
+  EVIDENCE_BINARIES_RE='bash|git|npm|pnpm|yarn|pytest|python3?|ruff|cargo|go test|make'
+fi
+
+# Phase 4: destructive command surface packs. Each surface is a separate pack
+# file under packs/destructive/. Operators choose which surfaces apply via
+# LLM_DARK_PATTERNS_DESTRUCTIVE_PACKS=filesystem,container,git-protected
+# (default: all).
+_DESTRUCTIVE_PATTERNS=()
+_load_destructive_patterns() {
+  if ! declare -F resolve_pack_paths >/dev/null 2>&1; then
+    return
+  fi
+  local pack_filter="${LLM_DARK_PATTERNS_DESTRUCTIVE_PACKS:-filesystem,container,git-protected,config-overwrite,cloud-prod,database,service}"
+  local pack
+  while IFS= read -r pack; do
+    [ -z "$pack" ] && continue
+    local pack_paths=()
+    local path
+    while IFS= read -r path; do
+      pack_paths+=("$path")
+    done < <(resolve_pack_paths "destructive" "$pack")
+    local file
+    for file in "${pack_paths[@]}"; do
+      [ -f "$file" ] || continue
+      while IFS= read -r line; do
+        local trimmed="${line#"${line%%[![:space:]]*}"}"
+        trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"
+        [ -z "$trimmed" ] && continue
+        case "$trimmed" in
+          \#*|\[*) continue ;;
+        esac
+        _DESTRUCTIVE_PATTERNS+=("$trimmed")
+      done < "$file"
+    done
+  done < <(printf '%s\n' "$pack_filter" | tr ',' '\n')
+}
+
+_load_destructive_patterns
+
+# Inline fallback if no packs loaded — preserves original behavior exactly.
+if [ "${#_DESTRUCTIVE_PATTERNS[@]}" -eq 0 ]; then
+  _DESTRUCTIVE_PATTERNS=(
+    '(^|[[:space:];&|])sudo[[:space:]]+r''m[[:space:]].*(-[[:alnum:]]*r|--recursive)([[:space:]]|$)'
+    '(^|[[:space:];&|])r''m[[:space:]]+(-[[:alnum:]]*r[[:alnum:]]*|--recursive)([[:space:]]|$)'
+    '(^|[[:space:];&|])r''m[[:space:]]+-[[:alnum:]]*f[[:alnum:]]*[[:space:]]+/'
+    '(^|[[:space:];&|])git[[:space:]]+reset[[:space:]]+--hard([[:space:]]|$)'
+    '(^|[[:space:];&|])git[[:space:]]+clean[[:space:]]+-[[:alnum:]]*(f[[:alnum:]]*d|d[[:alnum:]]*f)'
+    '(^|[[:space:];&|])git[[:space:]]+checkout[[:space:]]+--[[:space:]]'
+    '(^|[[:space:];&|])find[[:space:]].*[[:space:]]-delete([[:space:]]|$)'
+    '(^|[[:space:];&|])mkfs(\.[[:alnum:]_-]+)?([[:space:]]|$)'
+    '(^|[[:space:];&|])dd[[:space:]].*[[:space:]]of=/dev/'
+    '(^|[[:space:];&|])chmod[[:space:]]+-R[[:space:]]+777([[:space:]]|$)'
+  )
+fi
 
 INPUT="$(cat)"
 
@@ -118,24 +247,16 @@ fi
 event="$(json_get '.hook_event_name')"
 
 is_destructive_bash() {
+  # Phase 4: patterns are loaded from packs/destructive/<surface>.txt at
+  # script startup into _DESTRUCTIVE_PATTERNS. Operators choose surfaces
+  # via LLM_DARK_PATTERNS_DESTRUCTIVE_PACKS (default: all). This function
+  # is unchanged in shape — only the source of patterns moved out.
   local command="$1"
   local candidate
   local pattern
-  local patterns=(
-    '(^|[[:space:];&|])sudo[[:space:]]+rm[[:space:]].*(-[[:alnum:]]*r|--recursive)([[:space:]]|$)'
-    '(^|[[:space:];&|])rm[[:space:]]+(-[[:alnum:]]*r[[:alnum:]]*|--recursive)([[:space:]]|$)'
-    '(^|[[:space:];&|])rm[[:space:]]+-[[:alnum:]]*f[[:alnum:]]*[[:space:]]+/'
-    '(^|[[:space:];&|])git[[:space:]]+reset[[:space:]]+--hard([[:space:]]|$)'
-    '(^|[[:space:];&|])git[[:space:]]+clean[[:space:]]+-[[:alnum:]]*(f[[:alnum:]]*d|d[[:alnum:]]*f)'
-    '(^|[[:space:];&|])git[[:space:]]+checkout[[:space:]]+--[[:space:]]'
-    '(^|[[:space:];&|])find[[:space:]].*[[:space:]]-delete([[:space:]]|$)'
-    '(^|[[:space:];&|])mkfs(\.[[:alnum:]_-]+)?([[:space:]]|$)'
-    '(^|[[:space:];&|])dd[[:space:]].*[[:space:]]of=/dev/'
-    '(^|[[:space:];&|])chmod[[:space:]]+-R[[:space:]]+777([[:space:]]|$)'
-  )
 
   for candidate in "$command" "$(printf '%s\n' "$command" | sed "s/['\"\\\\]/ /g")"; do
-    for pattern in "${patterns[@]}"; do
+    for pattern in "${_DESTRUCTIVE_PATTERNS[@]}"; do
       if printf '%s\n' "$candidate" | grep -Eiq -- "$pattern"; then
         return 0
       fi
@@ -199,11 +320,31 @@ block_sensitive_write_paths() {
 }
 
 has_positive_closeout() {
+  # Detects positive-closeout verbs UNLESS each occurrence is negated within
+  # the same clause. Splits on sentence delimiters (.!?) and conjunctions
+  # (but/however/though/except/although) so a hedge in one clause does not
+  # silence a positive claim in the next. Closes issue #5 (negation
+  # early-return bypass). Vocabulary loaded from packs/locale/* with inline
+  # English fallback (Phase 1).
   local message="$1"
-  if printf '%s\n' "$message" | grep -Eiq '(^|[^[:alpha:]])(not done|not complete|not completed|not ready|incomplete|unfinished)([^[:alpha:]]|$)'; then
-    return 1
-  fi
-  printf '%s\n' "$message" | grep -Eiq '(^|[^[:alpha:]])(all set|done|completed|complete|implemented|fixed|finished|ready|passes|passed|shipped)([^[:alpha:]]|$)'
+  local POSITIVE="(^|[^[:alpha:]])(${POSITIVE_VERBS_RE})([^[:alpha:]]|$)"
+  local NEGATIONS="(^|[^[:alpha:]])(${NEGATIONS_RE})([^[:alpha:]]|$)"
+
+  local clauses
+  clauses="$(printf '%s' "$message" \
+    | sed -E 's/[.!?]+/\n/g' \
+    | sed -E 's/(,|;)?[[:space:]]+(but|however|though|except|although)[[:space:]]+/\n/gI')"
+
+  while IFS= read -r clause; do
+    [ -z "$clause" ] && continue
+    if printf '%s' "$clause" | grep -Eiq "$POSITIVE"; then
+      if ! printf '%s' "$clause" | grep -Eiq "$NEGATIONS"; then
+        return 0
+      fi
+    fi
+  done <<< "$clauses"
+
+  return 1
 }
 
 has_missing_verification() {
@@ -213,9 +354,27 @@ has_missing_verification() {
 }
 
 has_command_evidence() {
+  # Evidence requires either:
+  #   (a) explicit "Commands run:" header followed by a backtick command, OR
+  #   (b) a backtick command in the closing window (last 240 chars of the
+  #       message) preceded within ~80 chars by an action verb that asserts
+  #       the command was actually executed (ran/executed/output/returned/
+  #       passed/result of/exit code/stderr/stdout).
+  # Closes issue #4 (backtick-anywhere-counts-as-evidence bypass). A backtick
+  # buried mid-message inside a parenthetical disclaiming execution no
+  # longer counts as evidence.
   local message="$1"
-  printf '%s\n' "$message" | grep -Eiq '(^|[[:space:]])commands?[[:space:]]+run:' && return 0
-  printf '%s\n' "$message" | grep -Eiq '`(bash|git|npm|pnpm|yarn|pytest|python3?|ruff|cargo|go test|make)[^`]*`' && return 0
+
+  if printf '%s\n' "$message" | grep -Eiq "(^|[[:space:]])commands?[[:space:]]+run:[^[:cntrl:]]{0,40}\`(${EVIDENCE_BINARIES_RE})[^\`]*\`"; then
+    return 0
+  fi
+
+  local closing
+  closing="$(printf '%s' "$message" | tail -c 240)"
+  if printf '%s\n' "$closing" | grep -Eiq "(\bran\b|\bexecuted\b|\brunning\b|\boutput\b|\bresult of\b|\bpassed\b|\bexit code\b|\bstderr\b|\bstdout\b|\breturned\b)[^\`]{0,80}\`(${EVIDENCE_BINARIES_RE})[^\`]*\`"; then
+    return 0
+  fi
+
   return 1
 }
 
