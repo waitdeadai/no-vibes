@@ -77,6 +77,13 @@ The repair-guidance template is the part that matters most. Most "block" hooks j
 - It does **not** replace `/verify` style discipline, code review, or CI. It is a turn-level safety net, not a release gate.
 - It does **not** depend on any larger framework. One file, one dependency.
 
+## Sister tools
+
+Part of a small series of single-purpose Claude Code hooks extracted from the [minmaxing](https://github.com/waitdeadai/minmaxing) governance harness.
+
+- [time-anchor](https://github.com/waitdeadai/time-anchor) — injects the local system clock into every session and prompt so the model stops giving training-cutoff answers.
+- [minmaxing](https://github.com/waitdeadai/minmaxing) — the full governance harness these hooks were extracted from.
+
 ## Acknowledgments
 
 `no-vibes` was extracted from a larger personal harness (the `minmaxing` workbench). The hook itself is licensed Apache-2.0; take it, fork it, improve it, send the PR back.
