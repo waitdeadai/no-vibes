@@ -85,6 +85,7 @@ Part of the [LLM Dark Patterns Hooks](https://github.com/waitdeadai/llm-dark-pat
 - [no-curfew](https://github.com/waitdeadai/no-curfew) — suppresses unsolicited rest/sleep/wellness paternalism.
 - [no-sycophancy](https://github.com/waitdeadai/no-sycophancy) — blocks praise-spam at turn open.
 - [no-cliffhanger](https://github.com/waitdeadai/no-cliffhanger) — blocks dangling permission-loop endings.
+- [honest-eta](https://github.com/waitdeadai/honest-eta) — vibe time estimates and linear-scaling parallelism claims.
 - [llm-dark-patterns](https://github.com/waitdeadai/llm-dark-patterns) — umbrella catalog of the suite.
 - [minmaxing](https://github.com/waitdeadai/minmaxing) — the parent governance harness.
 
