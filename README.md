@@ -82,6 +82,7 @@ The repair-guidance template is the part that matters most. Most "block" hooks j
 Part of a small series of single-purpose Claude Code hooks extracted from the [minmaxing](https://github.com/waitdeadai/minmaxing) governance harness.
 
 - [time-anchor](https://github.com/waitdeadai/time-anchor) — injects the local system clock into every session and prompt so the model stops giving training-cutoff answers.
+- [no-curfew](https://github.com/waitdeadai/no-curfew) — suppresses unsolicited rest/sleep/wellness paternalism in agent-mode sessions.
 - [minmaxing](https://github.com/waitdeadai/minmaxing) — the full governance harness these hooks were extracted from.
 
 ## Acknowledgments
