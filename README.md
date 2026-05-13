@@ -103,7 +103,15 @@ bash scripts/hook-smoke.sh
 
 The physics-backed adapter maps `no-vibes` to the `evidence_claims` category
 engine and can be used for daily enforcement, fixtures, benchmark evaluation,
-and opt-in content-free collaboration telemetry.
+and opt-in content-free collaboration telemetry. The AgentCloseoutBench
+installer also writes a PreToolUse tamper guard for ordinary Claude Code edits
+to hook wiring, adapter env, pinned engine, and pinned rule-pack paths.
+
+In the physics-backed v0.2 lane, weak proof shapes such as `Implemented and
+checked.`, `Done. Commands run: none.`, and `Changed files:` without command or
+verification evidence are rejected. This is still closeout-contract evidence,
+not independent proof that the work actually happened, and it is not an OS
+sandbox or bypass-proof claim.
 
 ## Sister tools
 
