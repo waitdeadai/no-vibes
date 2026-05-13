@@ -88,6 +88,23 @@ The repair-guidance template is the part that matters most. Most "block" hooks j
 - It does **not** replace `/verify` style discipline, code review, or CI. It is a turn-level safety net, not a release gate.
 - It does **not** depend on any larger framework. One file, one dependency.
 
+## Physics-backed engine
+
+This standalone hook remains the simplest install path. For users who want the
+benchmark-backed, rule-pack-hashed engine version, the same closeout mechanic is
+also available in [AgentCloseoutBench](https://github.com/waitdeadai/agent-closeout-bench):
+
+```bash
+git clone https://github.com/waitdeadai/agent-closeout-bench
+cd agent-closeout-bench
+bash adapters/claude-code/install.sh /path/to/your/project no-vibes
+bash scripts/hook-smoke.sh
+```
+
+The physics-backed adapter maps `no-vibes` to the `evidence_claims` category
+engine and can be used for daily enforcement, fixtures, benchmark evaluation,
+and opt-in content-free collaboration telemetry.
+
 ## Sister tools
 
 Part of the [LLM Dark Patterns Hooks](https://github.com/waitdeadai/llm-dark-patterns) suite — single-purpose Claude Code Stop hooks that suppress LLM dark-pattern defaults so power-user operators can actually work.
