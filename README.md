@@ -33,18 +33,48 @@ See [RECEIPTS.md](RECEIPTS.md) for the redacted transcripts.
 
 ## Install (30 seconds)
 
+### Recommended: via the self-hosted plugin marketplace
+
 ```bash
-# 1. drop the hook into your project
+claude plugin marketplace add waitdeadai/claude-plugins
+claude plugin install llm-dark-patterns@waitdeadai-plugins
+```
+
+This installs the whole `llm-dark-patterns` suite (28 hooks including `no-vibes`) and keeps them wired correctly across Claude Code settings updates.
+
+> The Anthropic community marketplace (`anthropics/claude-plugins-community`) currently does not list this plugin despite a Published submission — last sync was 2026-05-13 and the pipeline has stalled. Tracking: [#1887](https://github.com/anthropics/claude-plugins-official/issues/1887). The self-hosted route above bypasses that pipeline and works today.
+
+### Standalone (single hook, manual wire)
+
+If you only want this one hook without the suite:
+
+```bash
 mkdir -p .claude/hooks
 curl -fsSL https://raw.githubusercontent.com/waitdeadai/no-vibes/main/no-vibes.sh \
   -o .claude/hooks/no-vibes.sh
 chmod +x .claude/hooks/no-vibes.sh
 
-# 2. wire it into your Claude Code settings
-#    (merge the snippet from settings.example.json into .claude/settings.json)
+# Then merge the snippet from settings.example.json into .claude/settings.json
 ```
 
-Requires `jq` (most systems have it; `brew install jq` / `apt install jq` if not).
+Either path requires `jq` (most systems have it; `brew install jq` / `apt install jq` if not).
+
+### Python integration (CrewAI)
+
+For CrewAI users:
+
+```bash
+pip install crewai-no-vibes
+```
+
+```python
+from crewai_no_vibes import verification_claim_evidence_guardrail
+from crewai import Task
+
+task = Task(description="...", expected_output="...", guardrail=verification_claim_evidence_guardrail)
+```
+
+See [waitdeadai/crewai-no-vibes](https://github.com/waitdeadai/crewai-no-vibes) — pure-Python port of the `evidence_claims` rule pack with empirical baseline F1 0.815 (95% CI [0.615, 0.941]) on MAST mode 3.3.
 
 ## What it actually does
 
