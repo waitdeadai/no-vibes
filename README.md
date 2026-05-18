@@ -10,6 +10,8 @@
 
 `no-vibes` is one bash file (~530 lines, depends only on `jq`) wired into Claude Code's `Stop`, `SubagentStop`, `PreToolUse`, `PostToolUse`, `TaskCreated`, and `TaskCompleted` events. It pattern-matches the language Claude uses when it is about to claim success it didn't earn — and it returns the exact corrective shape the model should use instead.
 
+> **Empirical baseline**: F1 **0.815** (95% CI [0.615, 0.941]) on MAST mode 3.3 ("No or Incorrect Verification"), n=19 human-labelled multi-agent traces from [MAD](https://huggingface.co/datasets/mcemri/MAD) (Cemri et al., NeurIPS 2025 — [arXiv:2503.13657](https://arxiv.org/abs/2503.13657)). The bash hook itself produces identical predictions to the Rust engine port on all 19 traces (zero per-trace disagreement) — see the [parity report](https://github.com/waitdeadai/agent-closeout-bench/blob/main/evaluation/runs/mast_human_bash_parity.md) and the [umbrella suite empirical writeup](https://github.com/waitdeadai/llm-dark-patterns/blob/main/evaluation/MAST-RESULTS.md).
+
 ### What's new (2026-05-11)
 
 | Change | What it fixes |
@@ -74,7 +76,7 @@ from crewai import Task
 task = Task(description="...", expected_output="...", guardrail=verification_claim_evidence_guardrail)
 ```
 
-See [waitdeadai/crewai-no-vibes](https://github.com/waitdeadai/crewai-no-vibes) — pure-Python port of the `evidence_claims` rule pack with empirical baseline F1 0.815 (95% CI [0.615, 0.941]) on MAST mode 3.3.
+See [waitdeadai/crewai-no-vibes](https://github.com/waitdeadai/crewai-no-vibes) — pure-Python port of the `evidence_claims` rule pack. The F1 0.815 baseline above holds across implementations (bash, Rust, Python): bash-Rust parity was verified on the n=19 human-labelled MAD subset with zero per-trace disagreement (see [parity report](https://github.com/waitdeadai/agent-closeout-bench/blob/main/evaluation/runs/mast_human_bash_parity.md)).
 
 ## What it actually does
 
